@@ -1,0 +1,9 @@
+html, body {
+    padding: 25px;
+}
+
+#token_box {
+    max-width: 50%;
+    overflow: hidden;
+    overflow-wrap: break-word;
+}

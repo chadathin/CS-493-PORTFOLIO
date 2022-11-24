@@ -1,0 +1,25 @@
+{% extends 'index.html' %} {% block title %} Success! {% endblock title %} {% block content %}
+<h4>Hello, {{session.userinfo.nickname}}!</h4>
+<p><a href="/logout" id="qsLogoutBtn">Logout</a></p>
+<!-- <h5>User ID:</h5> -->
+<!-- <div id="token_box"><code>{{pretty['sub']}}</code></div> -->
+<!-- <h5>id_token generated:</h5> -->
+<!-- <div id="token_box"><code>{{pretty['id_token']}}</code></div> -->
+<!-- <div id="token_box"><code>{{pretty}}</code></div> -->
+<ul>
+    {% for k in pretty %}
+
+    <li>
+        <h5>{{k}}</h5>
+        {% if k == "id_token" %}
+        <div id="token_box">{{pretty[k]}}</div>
+
+        {% else %}
+        <div style="max-width: 25px;">{{pretty[k]}}</div>
+        {% endif %}
+    </li>
+
+    {% endfor %}
+</ul>
+
+{% endblock content %}
