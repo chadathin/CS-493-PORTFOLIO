@@ -35,7 +35,14 @@ from werkzeug.exceptions import HTTPException
 from dotenv import load_dotenv, find_dotenv
 from authlib.integrations.flask_client import OAuth
 
+from verify_jwt import AuthError, verify_jwt
+
+
+import user
+
 app = Flask(__name__)
+app.register_blueprint(user.bp)
+
 app.secret_key = constants.APP_SECRET_KEY
 
 client = datastore.Client()
@@ -49,7 +56,11 @@ DOMAIN = constants.DOMAIN
 # For example
 # DOMAIN = 'fall21.us.auth0.com'
 
-ALGORITHMS = ["RS256"]
+@app.errorhandler(AuthError)
+def handle_auth_error(ex):
+    response = jsonify(ex.error)
+    response.status_code = ex.status_code
+    return response
 
 oauth = OAuth(app)
 
@@ -66,82 +77,7 @@ auth0 = oauth.register(
     server_metadata_url=f'https://{constants.DOMAIN}/.well-known/openid-configuration'
 )
 
-# This code is adapted from https://auth0.com/docs/quickstart/backend/python/01-authorization?_ga=2.46956069.349333901.1589042886-466012638.1589042885#create-the-jwt-validation-decorator
 
-class AuthError(Exception):
-    def __init__(self, error, status_code):
-        self.error = error
-        self.status_code = status_code
-
-
-@app.errorhandler(AuthError)
-def handle_auth_error(ex):
-    response = jsonify(ex.error)
-    response.status_code = ex.status_code
-    return response
-
-# Verify the JWT in the request's Authorization header
-def verify_jwt(request):
-    if 'Authorization' in request.headers:
-        auth_header = request.headers['Authorization'].split()
-        token = auth_header[1]
-    else:
-        raise AuthError({"code": "no auth header",
-                            "description":
-                                "Authorization header is missing"}, 401)
-    
-    jsonurl = urlopen("https://"+ DOMAIN+"/.well-known/jwks.json")
-    jwks = json.loads(jsonurl.read())
-    try:
-        unverified_header = jwt.get_unverified_header(token)
-    except jwt.JWTError:
-        raise AuthError({"code": "invalid_header",
-                        "description":
-                            "Invalid header. "
-                            "Use an RS256 signed JWT Access Token"}, 401)
-    if unverified_header["alg"] == "HS256":
-        raise AuthError({"code": "invalid_header",
-                        "description":
-                            "Invalid header. "
-                            "Use an RS256 signed JWT Access Token"}, 401)
-    rsa_key = {}
-    for key in jwks["keys"]:
-        if key["kid"] == unverified_header["kid"]:
-            rsa_key = {
-                "kty": key["kty"],
-                "kid": key["kid"],
-                "use": key["use"],
-                "n": key["n"],
-                "e": key["e"]
-            }
-    if rsa_key:
-        try:
-            payload = jwt.decode(
-                token,
-                rsa_key,
-                algorithms=ALGORITHMS,
-                audience=CLIENT_ID,
-                issuer="https://"+ DOMAIN+"/"
-            )
-        except jwt.ExpiredSignatureError:
-            raise AuthError({"code": "token_expired",
-                            "description": "token is expired"}, 401)
-        except jwt.JWTClaimsError:
-            raise AuthError({"code": "invalid_claims",
-                            "description":
-                                "incorrect claims,"
-                                " please check the audience and issuer"}, 401)
-        except Exception:
-            raise AuthError({"code": "invalid_header",
-                            "description":
-                                "Unable to parse authentication"
-                                " token."}, 401)
-
-        return payload
-    else:
-        raise AuthError({"code": "no_rsa_key",
-                            "description":
-                                "No RSA key in JWKS"}, 401)
 
 
 # ===================================== TESTING / DEBUGGING ROUTES =====================================
@@ -187,32 +123,32 @@ def welcome():
 
 @app.route('/success')
 def success():
+    first = False
     tok = session.get('user')
-    print("EMAIL: {}".format(tok['userinfo']['email']))
+    print("sub: {}".format(tok['userinfo']['sub']))
 
     q = client.query(kind=constants.user)
-    q.add_filter('email', '=', tok['userinfo']['email'])
-    result = q.fetch(limit = 1)
-    print("RESULTS: {}".format(result.num_results))
-    if result.num_results == 0:
-        new_user = datastore.entity.Entity(key=client.key(constants.user))
-        new_user.update({
-            "id_token" : tok["id_token"],
-            "sub" : tok["userinfo"]["sub"],
-            "email" : tok["userinfo"]["email"],
-            "name" : tok["userinfo"]["nickname"]
-        })
+    q.add_filter('sub', '=', tok['userinfo']['sub'])
+    result = list(q.fetch(limit = 1))
+    print(result)
+
+    new_user = datastore.entity.Entity(key=client.key(constants.user))
+    new_user.update({
+        "id_token" : tok["id_token"],
+        "sub" : tok["userinfo"]["sub"],
+        "email" : tok["userinfo"]["email"],
+        "name" : tok["userinfo"]["nickname"]
+    })
+
+    if len(result) == 0:
+        
     # send user info to DB (if they don't exist...)
     # Check for uniqueness constraint
-
-
-    
     
         client.put(new_user)
+        first = True
 
-        return render_template("success.html", session=session.get('user'), pretty=new_user)
-    else:
-        return render_template("success.html", session=session.get('user'), pretty=json.dumps(tok))
+    return render_template("success.html", session=session.get('user'), pretty=new_user, first=first)
 
 
 @app.route("/callback", methods=["GET", "POST"])

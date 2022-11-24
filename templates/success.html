@@ -1,5 +1,18 @@
-{% extends 'index.html' %} {% block title %} Success! {% endblock title %} {% block content %}
+{% extends 'index.html' %} 
+
+{% block title %} Success! {% endblock title %} 
+
+{% block content %}
+
+{% if not first %}
+
+<h4>Welcome back, {{session.userinfo.nickname}}!</h4>
+
+{% else %}
+
 <h4>Hello, {{session.userinfo.nickname}}!</h4>
+
+{% endif %}
 <p><a href="/logout" id="qsLogoutBtn">Logout</a></p>
 <!-- <h5>User ID:</h5> -->
 <!-- <div id="token_box"><code>{{pretty['sub']}}</code></div> -->
