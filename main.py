@@ -38,10 +38,12 @@ from authlib.integrations.flask_client import OAuth
 from verify_jwt import AuthError, verify_jwt
 
 
-import user
+import user, boat, load
 
 app = Flask(__name__)
 app.register_blueprint(user.bp)
+app.register_blueprint(boat.bp)
+# app.register_blueprint(load.bp)
 
 app.secret_key = constants.APP_SECRET_KEY
 
@@ -137,7 +139,8 @@ def success():
         "id_token" : tok["id_token"],
         "sub" : tok["userinfo"]["sub"],
         "email" : tok["userinfo"]["email"],
-        "name" : tok["userinfo"]["nickname"]
+        "name" : tok["userinfo"]["nickname"],
+        "boats": []
     })
 
     if len(result) == 0:
@@ -175,6 +178,7 @@ def logout():
 # ===================================== USABILITY ROUTES =====================================
 
 # Create a boat if the Authorization header contains a valid JWT
+'''
 @app.route('/boats', methods=['POST', 'GET'])
 def boats_post():
     if request.method == 'POST':
@@ -275,7 +279,7 @@ def get_rid_of_it(boat_id):
                             "Invalid header. "
                             "Use an RS256 signed JWT Access Token"}, 401)
             
-
+'''
 if __name__ == '__main__':
     app.run(host='localhost', port=8080, debug=True)
 

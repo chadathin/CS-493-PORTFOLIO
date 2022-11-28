@@ -3,6 +3,10 @@ test_pw = "jessicaday123!"
 
 my_test_email = "boehmch@oregonstate.edu"
 my_test_pw = "ThisIsAPassword1!"
+"""
+another@email.com
+AnotherPassword1!
+"""
 
 boats = "boats"
 loads = "loads"
