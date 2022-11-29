@@ -380,4 +380,67 @@ def boats_get_delete(boat_id):
         return (res)
 
 
-    
+@bp.route('/<boat_id>/loads/<load_id>', methods=["PUT", "DELETE"])
+def load_put_delete(boat_id, load_id):
+    if request.method == "PUT":
+        # Get the load
+        load_key = client.key(constants.loads, int(load_id))
+        load = client.get(key=load_key)
+        
+        # Make sure load exists
+        if load is None:
+            return ({"Error": "The specified boat and/or load does not exist"}, 404)
+        
+        # Get the boat
+        boat_key = client.key(constants.boats, int(boat_id))
+        boat = client.get(key=boat_key)
+        
+        # Make sure boat exists
+        if boat is None:
+            return ({"Error": "The specified boat and/or load does not exist"}, 404)
+        
+        # Make sure load is not carried, already
+        if load["carrier"] is not None:
+            return ({"Error": "The load is already loaded on another boat"}, 403)
+        
+        # If load and boat exist, and load has not been assigned, add load to boat's loads list
+        boat["loads"].append({"id": load.key.id, "self": request.host_url+"loads/"+str(load.key.id)})
+        boat["self"] = request.host_url + "boats/" + str(boat.key.id)
+        client.put(boat)
+        
+        # Then, assign load to boat
+        load.update({
+            "carrier": {"id": boat.key.id, "name": boat["name"], "self": boat["self"]}
+        })
+        client.put(load)
+        return ('', 204)
+    elif request.method == "DELETE":
+        # Delete a load from a boat
+        loaded = False
+        # Get the load
+        load_key = client.key(constants.loads, int(load_id))
+        load = client.get(key=load_key)
+        
+        # Make sure load exists
+        if load is None:
+            return ({"Error": "No boat with this boat_id is loaded with the load with this load_id"}, 404)
+        
+        # Get the boat
+        boat_key = client.key(constants.boats, int(boat_id))
+        boat = client.get(key=boat_key)
+        
+        # Make sure boat exists
+        if boat is None:
+            return ({"Error": "No boat with this boat_id is loaded with the load with this load_id"}, 404)
+        
+        # check if the specified load is on the specified boat
+        for l in range(len(boat["loads"])):
+            
+            if boat["loads"][l]["id"] == int(load_id):
+                del boat["loads"][l]
+                load["carrier"] = None
+                client.put(boat)
+                client.put(load)
+                return ('', 204)
+                
+        return ({"Error": "No boat with this boat_id is loaded with the load with this load_id"}, 404)

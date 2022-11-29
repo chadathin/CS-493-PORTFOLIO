@@ -43,7 +43,7 @@ import user, boat, load
 app = Flask(__name__)
 app.register_blueprint(user.bp)
 app.register_blueprint(boat.bp)
-# app.register_blueprint(load.bp)
+app.register_blueprint(load.bp)
 
 app.secret_key = constants.APP_SECRET_KEY
 
