@@ -251,7 +251,14 @@ def boats_get_delete(boat_id):
         # if the no one owns the boat, or the jwt['sub'] owns the boat
         # it can be deleted
         if boat['owner'] is None or boat['owner'] == payload['sub']:
-            # TODO: REMOVE THIS BOAT FROM ALL LOADS ASSOCIATED WITH IT
+            for item in boat["loads"]:
+            # get the load
+                load_key = client.key(constants.loads, int(item["id"]))
+                load = client.get(key=load_key)
+                # update 'carrier to none
+                load["carrier"] = None
+                # put back into DB
+                client.put(load)
             client.delete(boat_key)
             return('', 204)
         else:
