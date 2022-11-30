@@ -16,6 +16,8 @@ valid_mime_types = ["application/json", "text/html"]
 def boats_get_post():        
     if request.method == "POST":
         # To add a boat: Must have valid JWT, must have unique name
+        # payload = verify_jwt(request)
+        
         try:
             # verify JWT
             payload = verify_jwt(request)
@@ -251,6 +253,22 @@ def boats_get_delete(boat_id):
         # if the no one owns the boat, or the jwt['sub'] owns the boat
         # it can be deleted
         if boat['owner'] is None or boat['owner'] == payload['sub']:
+            # remove boat from the owner's "boats" list
+            if boat['owner'] is not None:
+                #get the owner
+                q = client.query(kind=constants.user)
+                q.add_filter('sub', '=', boat['owner'])
+                owner = list(q.fetch(limit=1))[0]
+                # print(owner['boats'])
+                # print(boat_id)
+                #remove boat from list
+                owner['boats'].remove(int(boat_id))
+                #put owner back
+                client.put(owner)
+                
+
+
+            #remove boat from "carrier" in each "load"
             for item in boat["loads"]:
             # get the load
                 load_key = client.key(constants.loads, int(item["id"]))

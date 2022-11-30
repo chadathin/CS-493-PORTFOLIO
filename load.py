@@ -83,9 +83,9 @@ def loads_get_delete(load_id):
         if load is None:
             return({"Error": "No load with this load_id exists"}, 404)
         # remove the load from it's 'carrier' if it is loaded
-        carrier_id = int(load["carrier"]["id"])
+        carrier_id = load["carrier"]
         if carrier_id is not None:
-            boat_key = client.key(constants.boats, carrier_id)
+            boat_key = client.key(constants.boats, int(carrier_id))
             boat = client.get(key=boat_key)
             
             print(boat.key.id)
