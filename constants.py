@@ -1,9 +1,13 @@
-test_email = "nick@newgirl.com"
-test_pw = "jessicaday123!"
-
-my_test_email = "boehmch@oregonstate.edu"
-my_test_pw = "ThisIsAPassword1!"
 """
+New users CAN make new accounts (create account, log in, log out).
+These are just the fake users I created for testing.
+
+"nick@newgirl.com"
+"jessicaday123!"
+
+"boehmch@oregonstate.edu"
+"ThisIsAPassword1!"
+
 another@email.com
 AnotherPassword1!
 """
