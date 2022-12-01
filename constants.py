@@ -12,6 +12,8 @@ boats = "boats"
 loads = "loads"
 user = "users"
 
+LIMIT = 5
+
 DOMAIN = "boehmch-portfolio.us.auth0.com"
 CLIENT_ID = "HkeTokrvl2g8dFCyndYRyiUUcs5UCr2Q"
 CLIENT_SECRET = "zWDtuqJuAOdws-NpwWtMtRJbewxXIFqvorCOK-U1EAR4H51qarpjuSzIKy9qUL_J"

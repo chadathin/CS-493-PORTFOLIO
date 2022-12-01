@@ -125,7 +125,6 @@ def welcome():
 
 @app.route('/success')
 def success():
-    first = False
     tok = session.get('user')
     print("sub: {}".format(tok['userinfo']['sub']))
 
@@ -134,24 +133,31 @@ def success():
     result = list(q.fetch(limit = 1))
     print(result)
 
-    new_user = datastore.entity.Entity(key=client.key(constants.user))
-    new_user.update({
-        "id_token" : tok["id_token"],
-        "sub" : tok["userinfo"]["sub"],
-        "email" : tok["userinfo"]["email"],
-        "name" : tok["userinfo"]["nickname"],
-        "boats": []
-    })
+    if len(result) == 1:
+        logger_inner = result[0]
+        logger_inner.update({
+            "id_token": tok["id_token"]
+        })
+        client.put(logger_inner)
+        first = False
+    else:
 
-    if len(result) == 0:
+        logger_inner = datastore.entity.Entity(key=client.key(constants.user))
+        logger_inner.update({
+            "id_token" : tok["id_token"],
+            "sub" : tok["userinfo"]["sub"],
+            "email" : tok["userinfo"]["email"],
+            "name" : tok["userinfo"]["nickname"],
+            "boats": []
+        })
+        first = True
         
     # send user info to DB (if they don't exist...)
     # Check for uniqueness constraint
     
-        client.put(new_user)
-        first = True
+        client.put(logger_inner)
 
-    return render_template("success.html", session=session.get('user'), pretty=new_user, first=first)
+    return render_template("success.html", session=session.get('user'), pretty=logger_inner, first=first)
 
 
 @app.route("/callback", methods=["GET", "POST"])

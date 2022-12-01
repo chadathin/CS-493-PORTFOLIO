@@ -16,15 +16,17 @@ valid_mime_types = ["application/json", "text/html"]
 def boats_get_post():        
     if request.method == "POST":
         # To add a boat: Must have valid JWT, must have unique name
-        # try:
-        # verify JWT
-        payload = verify_jwt(request)
-        # except:
-        #     # Client did not sent JSON
-        #     res = make_response({"Error": "No valid JWT provided"})
-        #     res.mimetype = 'application/json'
-        #     res.status_code = 415
-        #     return res
+        # payload = verify_jwt(request)
+        
+        try:
+            # verify JWT
+            payload = verify_jwt(request)
+        except:
+            # Client did not sent JSON
+            res = make_response({"Error": "No valid JWT provided"})
+            res.mimetype = 'application/json'
+            res.status_code = 415
+            return res
 
         try:
             
@@ -38,14 +40,17 @@ def boats_get_post():
 
         # Check for uniqueness constraint
         q = client.query(kind=constants.boats)
-        print("NAME:", content["name"])
+        # print("NAME:", content["name"])
         q.add_filter('name', '=', content['name'])
         result = q.fetch(limit = 1)
 
+        # I have no idea why, but the uniqueness constraint
+        # is not upheld if this loop is removed.
+        # Therefore, it shall stay.
         for r in result:
             print(r)
 
-        print(result.num_results)
+        # print(result.num_results)
         if result.num_results > 0:
             res = make_response({"Error": "A boat with that name already exists"})
             res.content_type = 'application/json'
@@ -58,9 +63,7 @@ def boats_get_post():
             res.mimetype = 'application/json'
             res.status_code = 406
             return res
-        
 
-        
         # If everything is hunky dory
         new_boat = datastore.entity.Entity(key=client.key(constants.boats))
         try:
@@ -100,7 +103,7 @@ def boats_get_post():
             limit = int(args["limit"])
             offset = int(args["offset"])
         else:
-            limit = 3
+            limit = constants.LIMIT
             offset = 0
         query = client.query(kind=constants.boats)
         query.add_filter("owner", "=", owner)
@@ -251,6 +254,22 @@ def boats_get_delete(boat_id):
         # if the no one owns the boat, or the jwt['sub'] owns the boat
         # it can be deleted
         if boat['owner'] is None or boat['owner'] == payload['sub']:
+            # remove boat from the owner's "boats" list
+            if boat['owner'] is not None:
+                #get the owner
+                q = client.query(kind=constants.user)
+                q.add_filter('sub', '=', boat['owner'])
+                owner = list(q.fetch(limit=1))[0]
+                # print(owner['boats'])
+                # print(boat_id)
+                #remove boat from list
+                owner['boats'].remove(int(boat_id))
+                #put owner back
+                client.put(owner)
+                
+
+
+            #remove boat from "carrier" in each "load"
             for item in boat["loads"]:
             # get the load
                 load_key = client.key(constants.loads, int(item["id"]))
@@ -266,6 +285,9 @@ def boats_get_delete(boat_id):
 
     elif request.method == "PATCH":
          # ONLY GIVEN ATTRIBUTES MODIFIED, EXCEPT ID
+        # make sure the JWT if valid
+        payload = verify_jwt(request)
+        owner = payload['sub']
 
         # Make sure the client accepts JSON
         if 'application/json' not in request.accept_mimetypes:
@@ -307,6 +329,9 @@ def boats_get_delete(boat_id):
         if boat is None:
             return({"Error": "No boat with this boat_id exists"}, 404)
         
+        if owner != boat['owner']:
+            return ({"Error": "Sorry, bub. Doesn't look like you own that boat."}, 403)
+
         for att in content.keys():
             if att in boat.keys():
                 boat[att] = content[att]

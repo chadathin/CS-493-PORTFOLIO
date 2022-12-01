@@ -37,12 +37,12 @@ def load_get_post():
     elif request.method == "GET":
         get_next = False
         args = request.args
-        print(args)
+        # print(args)
         if len(args) > 0:
             limit = int(args["limit"])
             offset = int(args["offset"])
         else:
-            limit = 3
+            limit = constants.LIMIT
             offset = 0
         query = client.query(kind=constants.loads)
         loads = list(query.fetch(limit=limit+1, offset=offset))
@@ -83,17 +83,19 @@ def loads_get_delete(load_id):
         if load is None:
             return({"Error": "No load with this load_id exists"}, 404)
         # remove the load from it's 'carrier' if it is loaded
-        carrier_id = int(load["carrier"]["id"])
-        if carrier_id is not None:
-            boat_key = client.key(constants.boats, carrier_id)
+        
+
+        if load["carrier"] is not None:
+            carrier_id = load["carrier"]["id"]
+            boat_key = client.key(constants.boats, int(carrier_id))
             boat = client.get(key=boat_key)
             
-            print(boat.key.id)
-            print(boat["loads"])
-            print(len(boat["loads"]))
+            # print(boat.key.id)
+            # print(boat["loads"])
+            # print(len(boat["loads"]))
             
             for i in range(len(boat["loads"])):
-                print("i: ",boat["loads"][i]["id"])
+                # print("i: ",boat["loads"][i]["id"])
                 if boat["loads"][i]["id"] == int(load_id):
                     del boat["loads"][i]
                     client.put(boat)
