@@ -40,14 +40,17 @@ def boats_get_post():
 
         # Check for uniqueness constraint
         q = client.query(kind=constants.boats)
-        print("NAME:", content["name"])
+        # print("NAME:", content["name"])
         q.add_filter('name', '=', content['name'])
         result = q.fetch(limit = 1)
 
+        # I have no idea why, but the uniqueness constraint
+        # is not upheld if this loop is removed.
+        # Therefore, it shall stay.
         for r in result:
             print(r)
 
-        print(result.num_results)
+        # print(result.num_results)
         if result.num_results > 0:
             res = make_response({"Error": "A boat with that name already exists"})
             res.content_type = 'application/json'
@@ -60,9 +63,7 @@ def boats_get_post():
             res.mimetype = 'application/json'
             res.status_code = 406
             return res
-        
 
-        
         # If everything is hunky dory
         new_boat = datastore.entity.Entity(key=client.key(constants.boats))
         try:
@@ -102,7 +103,7 @@ def boats_get_post():
             limit = int(args["limit"])
             offset = int(args["offset"])
         else:
-            limit = 3
+            limit = constants.LIMIT
             offset = 0
         query = client.query(kind=constants.boats)
         query.add_filter("owner", "=", owner)
@@ -284,6 +285,9 @@ def boats_get_delete(boat_id):
 
     elif request.method == "PATCH":
          # ONLY GIVEN ATTRIBUTES MODIFIED, EXCEPT ID
+        # make sure the JWT if valid
+        payload = verify_jwt(request)
+        owner = payload['sub']
 
         # Make sure the client accepts JSON
         if 'application/json' not in request.accept_mimetypes:
@@ -325,6 +329,9 @@ def boats_get_delete(boat_id):
         if boat is None:
             return({"Error": "No boat with this boat_id exists"}, 404)
         
+        if owner != boat['owner']:
+            return ({"Error": "Sorry, bub. Doesn't look like you own that boat."}, 403)
+
         for att in content.keys():
             if att in boat.keys():
                 boat[att] = content[att]
