@@ -16,15 +16,15 @@ valid_mime_types = ["application/json", "text/html"]
 def boats_get_post():        
     if request.method == "POST":
         # To add a boat: Must have valid JWT, must have unique name
-        try:
-            # verify JWT
-            payload = verify_jwt(request)
-        except:
-            # Client did not sent JSON
-            res = make_response({"Error": "No valid JWT provided"})
-            res.mimetype = 'application/json'
-            res.status_code = 415
-            return res
+        # try:
+        # verify JWT
+        payload = verify_jwt(request)
+        # except:
+        #     # Client did not sent JSON
+        #     res = make_response({"Error": "No valid JWT provided"})
+        #     res.mimetype = 'application/json'
+        #     res.status_code = 415
+        #     return res
 
         try:
             
