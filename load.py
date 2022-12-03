@@ -32,7 +32,10 @@ def load_get_post():
         client.put(new_load)
         new_load["id"] = new_load.key.id
         new_load["self"] = request.url_root + constants.loads + "/" + str(new_load["id"])
-        return (json.dumps(new_load), 201)
+        res = make_response(json.dumps(new_load))
+        res.mimetype = 'application/json'
+        res.status_code = 201
+        return (res)
     
     elif request.method == "GET":
         get_next = False

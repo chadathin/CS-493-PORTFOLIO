@@ -181,6 +181,14 @@ def associate_boat_user(boat_id, user_id):
         # verify jwt
         payload = verify_jwt(request)
 
+        # get the owner
+        # Check if the user exists
+        q = client.query(kind=constants.user)
+        q.add_filter("sub", "=", user_id)
+        users = list(q.fetch())
+        if len(users) == 0:
+            return ({"Error": "No user with this ID exists"}, 404)
+
         # make sure the boat exists
         boat_key = client.key(constants.boats, int(boat_id))
         boat = client.get(key=boat_key)
@@ -196,19 +204,16 @@ def associate_boat_user(boat_id, user_id):
             return ({"Error": "Hey, man! You don't own that boat!"}, 403)
 
         else:
-            # get the owner
-            # Check if the user exists
-            q = client.query(kind=constants.user)
-            q.add_filter("sub", "=", user_id)
-            users = list(q.fetch())
-            if len(users) == 0:
-                return ({"Error": "No user with this ID exists"}, 404)
 
             user = users[0]
+            if boat.key.id not in user['boats']:
+                return ({"Error": "Hey, man! You don't own that boat!"}, 403)
             user['boats'].remove(boat.key.id)
             boat['owner'] = None
             client.put(user)
             client.put(boat)
+            boat['id'] = boat.key.id
+            boat['self'] = request.host_url + "boats/" + str(boat.key.id)
             res = make_response(boat)
             res.status_code = 200
             res.mimetype = 'application/json'
