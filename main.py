@@ -51,6 +51,8 @@ client = datastore.Client()
 
 BOATS = "boats"
 
+# need to add something to commit
+
 # Update the values of the following 3 variables
 CLIENT_ID = constants.CLIENT_ID
 CLIENT_SECRET = constants.CLIENT_SECRET
